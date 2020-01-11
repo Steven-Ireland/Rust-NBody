@@ -61,24 +61,31 @@ fn create_window(events_loop: &EventsLoop) -> GlWindow {
     gl_window
 }
 
+fn handle_window_events(events_loop: &mut EventsLoop, gl_window: &GlWindow) -> bool {
+    let mut still_running = true;
+
+    events_loop.poll_events(|event| match event {
+        glutin::Event::WindowEvent { event, .. } => {
+            match event {
+                glutin::WindowEvent::Closed => still_running = false,
+                glutin::WindowEvent::Resized(w, h) => gl_window.resize(w, h),
+                _ => {}
+            }
+        }
+        _ => {}
+    });
+
+    still_running
+}
+
 fn main() {
     let mut running = true;
     let mut events_loop = EventsLoop::new();
-    let gl_window = createWindow(&events_loop);
+    let gl_window = create_window(&events_loop);
     let nano_context = nanovg::ContextBuilder::new().stencil_strokes().build().expect("Initialization of NanoVG failed!");
 
     while running {
-        events_loop.poll_events(|event| match event {
-            glutin::Event::WindowEvent { event, .. } => {
-                match event {
-                    glutin::WindowEvent::Closed => running = false,
-                    glutin::WindowEvent::Resized(w, h) => gl_window.resize(w, h),
-                    _ => {}
-                }
-            }
-            _ => {}
-        });
-
-        drawFrame(&nano_context, &gl_window);
+        running = handle_window_events(&mut events_loop, &gl_window);
+        draw_frame(&nano_context, &gl_window);
     }
 }

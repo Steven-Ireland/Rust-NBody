@@ -8,14 +8,7 @@ use nanovg::{Color, Context};
 
 const INIT_WINDOW_SIZE: (u32, u32) = (1024, 720);
 
-struct Body {
-    name: String,
-    x: f64,
-    y: f64,
-    mass: f64
-}
-
-fn unsafe_clear(width: i32, height: i32) {
+fn clear_screen(width: i32, height: i32) {
     unsafe {
         gl::Viewport(0, 0, width, height);
         gl::Clear(
@@ -27,7 +20,7 @@ fn unsafe_clear(width: i32, height: i32) {
 fn draw_frame(context: &Context, gl_window: &GlWindow) {
     let (width, height) = gl_window.get_inner_size().unwrap();
 
-    unsafe_clear(width as i32, height as i32);
+    clear_screen(width as i32, height as i32);
     context.frame((width as f32, height as f32), gl_window.hidpi_factor(), |frame| {
         // Draw red-filled rectangle.
         frame.path(

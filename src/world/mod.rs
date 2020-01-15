@@ -8,27 +8,19 @@ pub struct Point {
   pub y: f64
 }
 
-type Vector = Point;
+pub type Vector = Point;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Body {
   pub name: &'static str,
   pub position: Point,
+  pub velocity: Vector,
   pub mass: f64
 }
 
-struct Force {
-  body: Body,
+struct Force<'a> {
+  body: &'a Body,
   vector: Vector
-}
-
-pub struct BodyCollection {
-  pub bodies: Vec<Body>
-}
-
-trait WorldSimulation {
-  fn update(&self);
-  fn add_body(&mut self, body: Body);
 }
 
 // Implements the newtonian equation F = G * (m1^2 + m2^2) / d^2
@@ -40,7 +32,7 @@ pub fn get_gravitational_force (body1: Body, body2: Body) -> f64 {
   return G * (m1_squared + m2_squared) / distance_squared;
 }
 
-pub fn get_force_angle (point1: Point, point2: Point) -> f64 {
+pub fn get_angle (point1: Point, point2: Point) -> f64 {
   let distance_difference_x = point2.x - point1.x;
   let distance_difference_y = point2.y - point1.y;
 
@@ -64,24 +56,47 @@ pub fn get_force_angle (point1: Point, point2: Point) -> f64 {
   }
 }
 
-impl WorldSimulation for BodyCollection {
-  fn update(&self) {
-    let forces : Vec<Force> = Vec::new();
-    for body1 in &self.bodies {
-      // For each body, calculate forces exterted on it by every other body
-      for body2 in &self.bodies {
-        // ignore itself
-        if body1 == body2 {
-          continue; 
-        }
-
-        let force_magnitude = get_gravitational_force(*body1, *body2);
+pub fn update_bodies(bodies: Vec<Body>) -> Vec<Body> {
+  let mut forces : Vec<Force> = Vec::new();
+  // For each body, calculate forces exterted on it by each other body
+  for body1 in bodies.iter() {
+    let mut sum_forces = Force { body: body1, vector: Vector {x: 0.0, y: 0.0}};
+    for body2 in bodies.iter() {
+      // ignore itself
+      if body1 == body2 {
+        continue; 
       }
+
+      let force_magnitude: f64 = get_gravitational_force(*body1, *body2);
+      let force_angle: f64 = get_angle((*body1).position,(*body2).position);
+
+      let force_vector = Vector {
+        x: force_magnitude * force_angle.cos(), 
+        y: force_magnitude * force_angle.sin()
+      };
+
+      sum_forces = Force {
+        vector: Vector {
+          x: sum_forces.vector.x + force_vector.x, 
+          y: sum_forces.vector.y + force_vector.y
+        },
+        ..sum_forces
+      };
     }
+
+    forces.push(sum_forces);
   }
 
-  fn add_body(&mut self, body: Body) {
-    self.bodies.push(body);
-  }
+  return forces.iter().map(|force| Body { 
+    position: Point {
+      x: (*force.body).position.x + (*force.body).velocity.x,
+      y: (*force.body).position.y + (*force.body).velocity.y
+    }, 
+    velocity: Vector {
+      x: (*force.body).velocity.x + force.vector.x / (*force.body).mass,
+      y: (*force.body).velocity.y + force.vector.y / (*force.body).mass
+    },
+    ..(*force.body)
+  }).collect();
 
 }

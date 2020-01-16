@@ -7,8 +7,10 @@ pub struct Point {
   pub x: f64,
   pub y: f64
 }
-
 pub type Vector = Point;
+
+pub const ORIGIN: Point = Point { x: 0.0, y: 0.0 };
+pub const RESTING: Vector = Vector { x: 0.0, y: 0.0 };
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Body {
@@ -36,15 +38,15 @@ pub fn get_angle (point1: Point, point2: Point) -> f64 {
   let distance_difference_x = point2.x - point1.x;
   let distance_difference_y = point2.y - point1.y;
 
-  if (distance_difference_x == 0.0) {
+  if distance_difference_x == 0.0 {
     // if body2 is above body1, return pi / 2. Otherwise return pi + pi/2
-    if (distance_difference_y >= 0.0) {
+    if distance_difference_y >= 0.0 {
       return PI / 2.0;
     } else {
       return PI + PI / 2.0;
     }
   } else {
-    if (distance_difference_x >= 0.0) {
+    if distance_difference_x >= 0.0 {
       if distance_difference_y < 0.0 {
         return 2.0 * PI + (distance_difference_y / distance_difference_x).atan();
       } else {
@@ -56,7 +58,7 @@ pub fn get_angle (point1: Point, point2: Point) -> f64 {
   }
 }
 
-pub fn update_bodies(bodies: Vec<Body>) -> Vec<Body> {
+pub fn update_bodies(bodies: Vec<Body>, time_step: f64) -> Vec<Body> {
   let mut forces : Vec<Force> = Vec::new();
   // For each body, calculate forces exterted on it by each other body
   for body1 in bodies.iter() {
@@ -89,12 +91,12 @@ pub fn update_bodies(bodies: Vec<Body>) -> Vec<Body> {
 
   return forces.iter().map(|force| Body { 
     position: Point {
-      x: (*force.body).position.x + (*force.body).velocity.x,
-      y: (*force.body).position.y + (*force.body).velocity.y
+      x: (*force.body).position.x + (*force.body).velocity.x * time_step,
+      y: (*force.body).position.y + (*force.body).velocity.y * time_step
     }, 
     velocity: Vector {
-      x: (*force.body).velocity.x + force.vector.x / (*force.body).mass,
-      y: (*force.body).velocity.y + force.vector.y / (*force.body).mass
+      x: (*force.body).velocity.x + force.vector.x * time_step / (*force.body).mass,
+      y: (*force.body).velocity.y + force.vector.y * time_step / (*force.body).mass
     },
     ..(*force.body)
   }).collect();
